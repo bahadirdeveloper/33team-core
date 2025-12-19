@@ -11,6 +11,18 @@ const PUBLIC_PATHS = ["/login", "/api/auth/login", "/api/seed", "/api/health"];
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
+    // 1. Redirect already logged-in users away from /login
+    if (pathname === "/login") {
+        const token = request.cookies.get("auth_token")?.value;
+        if (token) {
+            // Validate token briefly to ensure it's not stale
+            const payload = await verifyJWT(token);
+            if (payload) {
+                return NextResponse.redirect(new URL("/projects", request.url));
+            }
+        }
+    }
+
     // Check if path is protected
     const isProtected = PROTECTED_PATHS.some(path => pathname.startsWith(path));
 
