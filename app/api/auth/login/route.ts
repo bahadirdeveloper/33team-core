@@ -12,30 +12,28 @@ export async function POST(request: Request) {
     });
 
     if (!user) {
-      // Auto-register logic (Optional: Remove if you want invite-only)
-      // For now, keeping it but hashing password
-      const hashedPassword = await bcrypt.hash(password, 10);
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    }
 
-      user = await prisma.user.create({
-        data: {
-          email,
-          password: hashedPassword,
-          name: email.split("@")[0],
-          role: email === "admin@team.core" ? "ADMIN" : "MEMBER",
-        },
+    // Check password
+    // Note: For existing plain text passwords (like '123'), we need a migration strategy or reset.
+    // Simple hack: if password matches plain text, re-hash it. Else check hash.
+
+    let isValid = false;
+
+    // 1. Try bcrypt compare
+    isValid = await bcrypt.compare(password, user.password);
+
+    // 2. Fallback for legacy plain text users (Migration)
+    // If not valid hash comparison, but equal strings
+    if (!isValid && user.password === password) {
+      isValid = true;
+      // Upgrade to hash
+      const newHash = await bcrypt.hash(password, 10);
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { password: newHash }
       });
-    } else {
-      // Check password
-      // Note: For existing plain text passwords (like '123'), we need a migration strategy or reset.
-      // Simple hack: if password matches plain text, re-hash it. Else check hash.
-
-      let isValid = false;
-
-      // 1. Try bcrypt compare
-      isValid = await bcrypt.compare(password, user.password);
-
-      // 2. Fallback for legacy plain text users (Migration)
-      // If not valid hash comparison, but equal strings
       if (!isValid && user.password === password) {
         isValid = true;
         // Upgrade to hash
