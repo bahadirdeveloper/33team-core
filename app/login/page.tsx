@@ -31,8 +31,8 @@ export default function LoginPage() {
             // But wait, the Context.login needs to be updated first to return success/fail or throw.
             // For now assume if no error, we are good? 
             // Let's rely on updated Context returning true/false or throwing.
-            router.push("/projects");
-            router.refresh();
+            // Force hard redirect to ensure cookies are picked up immediately by Middleware
+            window.location.href = "/projects";
         } catch (err: any) {
             setError(err.message || "Giriş başarısız. Bilgilerinizi kontrol edin.");
         } finally {
