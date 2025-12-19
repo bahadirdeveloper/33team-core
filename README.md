@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+# TeamCore - Fiziksel Çıktı Odaklı Görev Yönetim Sistemi
 
-First, run the development server:
+Bu proje, yazılım ekipleri için geliştirilmiş, her görevin somut bir çıktısı (URL, Repo, Servis) olmasını zorunlu kılan bir görev yönetim sistemidir.
 
+## Özellikler
+
+- **Proje ve Dal Yönetimi:** Projeleri `backend`, `frontend`, `design` gibi dallara ayırın.
+- **Görev Marketi:** Ekip üyeleri havuzdan (`AVAILABLE`) görev seçer.
+- **Bağımlılıklar:** Bir görev bitmeden diğerini alamazsınız.
+- **Zamanlı Görevler:** `dueAt` süresi dolan görevler otomatik olarak havuz'a geri döner.
+- **Fiziksel Çıktı:** Görevi teslim etmek için bir URL veya output identifier girmek zorunludur.
+
+## Kurulum
+
+1. **Gereksinimler:** Node.js 18+, PostgreSQL veritabanı.
+2. **Projeyi Hazırlama:**
+   ```bash
+   git clone <repo>
+   cd team-core
+   npm install
+   ```
+3. **Çevre Değişkenleri:**
+   `.env` dosyasını oluşturun ve veritabanı bağlantınızı ekleyin:
+   ```env
+   DATABASE_URL="postgresql://kullanici:sifre@localhost:5432/teamcore_db"
+   ```
+   *Not: PostgreSQL kurulu değilse docker ile kaldırabilirsiniz.*
+
+4. **Veritabanı Kurulumu:**
+   Prisma ile şemayı veritabanına uygulayın:
+   ```bash
+   npx prisma db push
+   # Veya migration ile:
+   # npx prisma migrate dev
+   ```
+
+5. **Uygulamayı Başlatma:**
+   ```bash
+   npm run dev
+   ```
+   Tarayıcıda `http://localhost:3000` adresine gidin.
+
+## Admin ve Kullanıcı
+
+- **Admin Paneli:** `/admin` rotasından erişilir.
+  - Proje ve Görev oluşturabilirsiniz.
+  - *Demo Modu:* Giriş yaparken email olarak `admin@team.core` kullanırsanız Admin yetkisiyle açılır.
+- **Kullanıcı:** `/login` sayfasından herhangi bir email ile giriş yapabilirsiniz (şifre önemsiz, mock auth).
+
+## Cron Job (Otomasyon)
+
+Süresi dolan görevleri boşa çıkarmak için aşağıdaki endpoint'i düzenli aralıklarla (örneğin her 10 dakikada bir) tetikleyin:
+
+`GET /api/cron/check-expired`
+
+Bunu `curl` ile veya Vercel Cron gibi servislerle yapabilirsiniz.
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+curl http://localhost:3000/api/cron/check-expired
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## SQL İstatistikleri
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+`queries.sql` dosyasında proje ve kullanıcı analizi için kullanabileceğiniz hazır SQL sorguları bulunmaktadır.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Geliştirme Notları
 
-## Learn More
+### Branch Ownership (Alan Sahiplenme)
+Proje dallarının (branch) belirli uzmanlar tarafından sahiplenilmesini sağlamak amacıyla `BranchOwnership` modeli eklenmiştir. Bu yapı sayesinde kullanıcılar belirli bir branşta `OWNER`, `CO_OWNER` veya `CONTRIBUTOR` rolü üstlenebilir. Bu, sorumluluk dağılımını netleştirir ve uzman liderliğini sisteme entegre eder.
 
-To learn more about Next.js, take a look at the following resources:
+### Prisma Komutları
+Veritabanı şemasında değişiklik yapıldığında migration oluşturmak ve client'ı güncellemek için:
+```bash
+# Migration oluştur ve uygula
+npx prisma migrate dev
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Prisma Client'ı güncelle (kod tamamlama için)
+npx prisma generate
+```

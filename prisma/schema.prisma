@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// SQLite does not support Enums. Using Strings.
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("MEMBER") // ADMIN, MEMBER
+  lastSeenAt DateTime?
+  
+  tasks     Task[]   // Assignments
+  submissions TaskSubmission[]
+  branchOwnerships BranchOwnership[]
+  
+  createdAt DateTime @default(now())
+}
+
+model Project {
+  id            Int      @id @default(autoincrement())
+  name          String
+  description   String?
+  deploymentUrl String?
+  repoUrl       String?
+  
+  branches      ProjectBranch[]
+  servers       Server[]
+  
+  createdAt     DateTime @default(now())
+}
+
+model ProjectBranch {
+  id        Int      @id @default(autoincrement())
+  name      String   // e.g. "backend", "design"
+  projectId Int
+  project   Project  @relation(fields: [projectId], references: [id])
+  tasks     Task[]
+  owners    BranchOwnership[]
+}
+
+model Server {
+  id          Int      @id @default(autoincrement())
+  ipAddress   String
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  projectId   Int
+  project     Project  @relation(fields: [projectId], references: [id])
+}
+
+model Task {
+  id            Int         @id @default(autoincrement())
+  title         String
+  description   String?
+  points        Int         @default(1)
+  dueAt         DateTime?
+  status        String      @default("AVAILABLE") // AVAILABLE, TAKEN, COMPLETED, EXPIRED
+  outputType    String      @default("URL")       // URL, REPO, SERVICE, DOCUMENT
+  
+  branchId      Int
+  branch        ProjectBranch @relation(fields: [branchId], references: [id])
+  
+  assignedToId  Int?
+  assignedTo    User?       @relation(fields: [assignedToId], references: [id])
+  
+  dependencies  TaskDependency[] @relation("TaskDependencies")
+  dependentOn   TaskDependency[] @relation("TaskDependents")
+  
+  submission    TaskSubmission?
+  
+  createdAt     DateTime @default(now())
+}
+
+model TaskDependency {
+  id          Int  @id @default(autoincrement())
+  taskId      Int  // The task that has a dependency
+  dependsOnId Int  // The task that must be finished first
+  
+  task        Task @relation("TaskDependents", fields: [taskId], references: [id])
+  dependsOn   Task @relation("TaskDependencies", fields: [dependsOnId], references: [id])
+}
+
+model TaskSubmission {
+  id          Int        @id @default(autoincrement())
+  taskId      Int        @unique
+  task        Task       @relation(fields: [taskId], references: [id])
+  userId      Int
+  user        User       @relation(fields: [userId], references: [id])
+  
+  outputType  String     // URL, REPO...
+  outputUrl   String
+  note        String?
+  
+  createdAt   DateTime   @default(now())
+}
+
+model BranchOwnership {
+  id        Int      @id @default(autoincrement())
+  
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  
+  branchId  Int
+  branch    ProjectBranch @relation(fields: [branchId], references: [id])
+  
+  role      String   @default("CONTRIBUTOR") // OWNER, CO_OWNER, CONTRIBUTOR
+  status    String   @default("ACTIVE")      // ACTIVE, PAUSED
+  note      String?
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([userId, branchId])
+}
