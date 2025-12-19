@@ -16,6 +16,7 @@ model User {
   name      String
   role      String   @default("MEMBER") // ADMIN, MEMBER
   lastSeenAt DateTime?
+  mustChangePassword Boolean @default(false)
   
   tasks     Task[]   // Assignments
   submissions TaskSubmission[]

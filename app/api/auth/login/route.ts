@@ -1,42 +1,55 @@
-
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
+import { signJWT } from "@/lib/token";
 
 export async function POST(request: Request) {
   try {
     const { email, password } = await request.json();
 
-    // Mock Login
-    // In a real app, hash password and check.
-    // Here, just find user or create dummy.
     let user = await prisma.user.findUnique({
       where: { email },
     });
 
     if (!user) {
-      // Auto-register for MVP
+      // Auto-register logic (Optional: Remove if you want invite-only)
+      // For now, keeping it but hashing password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
       user = await prisma.user.create({
         data: {
           email,
-          password: password, // In real app, hash this!
+          password: hashedPassword,
           name: email.split("@")[0],
           role: email === "admin@team.core" ? "ADMIN" : "MEMBER",
         },
       });
+    } else {
+      // Check password
+      // Note: For existing plain text passwords (like '123'), we need a migration strategy or reset.
+      // Simple hack: if password matches plain text, re-hash it. Else check hash.
+
+      let isValid = false;
+
+      // 1. Try bcrypt compare
+      isValid = await bcrypt.compare(password, user.password);
+
+      // 2. Fallback for legacy plain text users (Migration)
+      // If not valid hash comparison, but equal strings
+      if (!isValid && user.password === password) {
+        isValid = true;
+        // Upgrade to hash
+        const newHash = await bcrypt.hash(password, 10);
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { password: newHash }
+        });
+      }
+
+      if (!isValid) {
+        return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+      }
     }
-
-    if (user.password !== password) {
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
-    }
-
-    // Set cookie/session (Simplified)
-    // handling cookies in Next.js App Router:
-    // We would return a Set-Cookie header.
-    // For MVP, we pass back the user object and store it in Context/LocalStorage or use cookies helper.
-
-    // Let's use a simple approach: Return User info.
 
     // Update lastSeenAt
     await prisma.user.update({
@@ -44,11 +57,26 @@ export async function POST(request: Request) {
       data: { lastSeenAt: new Date() }
     });
 
-    const response = NextResponse.json({ success: true, user });
-    response.cookies.set("auth_token", String(user.id), { httpOnly: true }); // Simplest "auth"
+    // Create JWT
+    const token = await signJWT({
+      sub: user.id.toString(),
+      role: user.role,
+      mustChangePassword: user.mustChangePassword
+    });
+
+    const response = NextResponse.json({ success: true, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+
+    // Set secure cookie
+    response.cookies.set("auth_token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 // 1 day
+    });
 
     return response;
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ error: "Login failed" }, { status: 500 });
   }
 }

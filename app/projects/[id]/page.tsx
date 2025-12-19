@@ -10,6 +10,7 @@ interface PageProps {
 export default async function ProjectPage({ params }: PageProps) {
     const { id } = await params;
     const projectId = parseInt(id);
+    console.log("DEBUG: ProjectPage visiting ID:", projectId);
 
     if (isNaN(projectId)) return notFound();
 

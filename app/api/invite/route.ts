@@ -19,7 +19,8 @@ export async function POST(request: Request) {
                 email,
                 name: email.split("@")[0],
                 password: "123", // Default password for invited users
-                role: "MEMBER"
+                role: "MEMBER",
+                mustChangePassword: true
             }
         });
 
