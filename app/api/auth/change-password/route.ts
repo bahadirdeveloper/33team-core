@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyJWT } from "@/lib/token";
+import { verifyJWT, signJWT } from "@/lib/token";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // 3. Update user
-        await prisma.user.update({
+        const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: {
                 password: hashedPassword,
@@ -33,7 +33,23 @@ export async function POST(request: Request) {
             }
         });
 
-        return NextResponse.json({ success: true });
+        // 4. Issue new token with updated state
+        const newToken = await signJWT({
+            sub: updatedUser.id.toString(),
+            role: updatedUser.role,
+            mustChangePassword: false
+        });
+
+        const response = NextResponse.json({ success: true });
+
+        response.cookies.set("auth_token", newToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 60 * 60 * 24 // 1 day
+        });
+
+        return response;
 
     } catch (error) {
         console.error("Change pass error:", error);
