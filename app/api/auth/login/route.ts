@@ -19,13 +19,9 @@ export async function POST(request: Request) {
     // Note: For existing plain text passwords (like '123'), we need a migration strategy or reset.
     // Simple hack: if password matches plain text, re-hash it. Else check hash.
 
-    let isValid = false;
+    let isValid = await bcrypt.compare(password, user.password);
 
-    // 1. Try bcrypt compare
-    isValid = await bcrypt.compare(password, user.password);
-
-    // 2. Fallback for legacy plain text users (Migration)
-    // If not valid hash comparison, but equal strings
+    // Fallback for legacy plain text users (Migration)
     if (!isValid && user.password === password) {
       isValid = true;
       // Upgrade to hash
@@ -34,19 +30,10 @@ export async function POST(request: Request) {
         where: { id: user.id },
         data: { password: newHash }
       });
-      if (!isValid && user.password === password) {
-        isValid = true;
-        // Upgrade to hash
-        const newHash = await bcrypt.hash(password, 10);
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { password: newHash }
-        });
-      }
+    }
 
-      if (!isValid) {
-        return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
-      }
+    if (!isValid) {
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
     // Update lastSeenAt
