@@ -12,7 +12,7 @@ interface User {
 
 interface AuthContextType {
     user: User | null;
-    login: (email: string) => Promise<void>; // Simplified login
+    login: (email: string, password: string) => Promise<void>;
     logout: () => void;
     isLoading: boolean;
 }
@@ -32,14 +32,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
     }, []);
 
-    const login = async (email: string) => {
-        // Call API (mock)
+    const login = async (email: string, password: string) => {
         try {
             const res = await fetch("/api/auth/login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password: "password" }) // Mock password
+                body: JSON.stringify({ email, password })
             });
+
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error || "Giriş başarısız");
+            }
+
             const data = await res.json();
             if (data.user) {
                 setUser(data.user);
@@ -47,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
         } catch (err) {
             console.error("Login Error", err);
+            throw err; // Re-throw to be caught by component
         }
     };
 
