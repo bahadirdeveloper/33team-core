@@ -24,7 +24,7 @@ export async function GET(request: Request) {
             },
         });
 
-        const formatted = ownerships.map((o) => ({
+        const formatted = ownerships.map((o: (typeof ownerships)[number]) => ({
             ownership: {
                 id: o.id,
                 role: o.role,

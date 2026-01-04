@@ -17,7 +17,7 @@ export async function POST(request: Request) {
             include: { dependsOn: true }
         });
 
-        const pendingDeps = dependencies.filter(d => d.dependsOn.status !== "COMPLETED");
+        const pendingDeps = dependencies.filter((d: (typeof dependencies)[number]) => d.dependsOn.status !== "COMPLETED");
         if (pendingDeps.length > 0) {
             return NextResponse.json({ error: "Dependencies not met" }, { status: 400 });
         }

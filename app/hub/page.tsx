@@ -21,9 +21,9 @@ export default async function HubPage() {
         });
 
         // Calculate metrics
-        const projectsWithMetrics = projects.map(p => {
+        const projectsWithMetrics = projects.map((p: (typeof projects)[number]) => {
             const totalBranches = p.branches.length;
-            const unownedBranches = p.branches.filter(b => b.owners.length === 0).length;
+            const unownedBranches = p.branches.filter((b: (typeof p.branches)[number]) => b.owners.length === 0).length;
 
             return {
                 id: p.id,

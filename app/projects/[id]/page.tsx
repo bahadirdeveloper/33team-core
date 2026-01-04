@@ -39,9 +39,9 @@ export default async function ProjectPage({ params }: PageProps) {
         if (!project) return notFound();
 
         // Calculate stats
-        const allTasks = project.branches.flatMap(b => b.tasks);
+        const allTasks = project.branches.flatMap((b: (typeof project.branches)[number]) => b.tasks);
         const total = allTasks.length;
-        const completed = allTasks.filter(t => t.status === 'COMPLETED').length;
+        const completed = allTasks.filter((t: { status: string }) => t.status === 'COMPLETED').length;
         const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
 
         const projectWithStats = {
@@ -72,7 +72,7 @@ export default async function ProjectPage({ params }: PageProps) {
             }
         });
 
-        const serializedDeliverables = deliverables.map(d => ({
+        const serializedDeliverables = deliverables.map((d: (typeof deliverables)[number]) => ({
             id: d.id,
             outputType: d.outputType,
             outputUrl: d.outputUrl,

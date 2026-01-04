@@ -1,6 +1,7 @@
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 // POST /api/tasks/submit
 export async function POST(request: Request) {
@@ -16,7 +17,7 @@ export async function POST(request: Request) {
         }
 
         // Transaction: Create submission and update task
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             const submission = await tx.taskSubmission.create({
                 data: {
                     taskId,

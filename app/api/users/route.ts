@@ -18,8 +18,8 @@ export async function GET() {
             }
         });
 
-        const enrichedUsers = users.map(u => {
-            const totalScore = u.tasks.reduce((acc, t) => acc + t.points, 0); // Each completed task adds points (default 1)
+        const enrichedUsers = users.map((u: (typeof users)[number]) => {
+            const totalScore = u.tasks.reduce((acc: number, t: { points: number }) => acc + t.points, 0); // Each completed task adds points (default 1)
             const isOnline = u.lastSeenAt && (new Date().getTime() - new Date(u.lastSeenAt).getTime() < 5 * 60 * 1000); // 5 mins
 
             return {
@@ -34,7 +34,7 @@ export async function GET() {
         });
 
         // Sort by score desc
-        enrichedUsers.sort((a, b) => b.totalScore - a.totalScore);
+        enrichedUsers.sort((a: { totalScore: number }, b: { totalScore: number }) => b.totalScore - a.totalScore);
 
         return NextResponse.json(enrichedUsers);
     } catch (error) {

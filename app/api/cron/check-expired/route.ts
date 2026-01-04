@@ -23,7 +23,7 @@ export async function GET() {
         if (count > 0) {
             await prisma.task.updateMany({
                 where: {
-                    id: { in: expiredTasks.map(t => t.id) }
+                    id: { in: expiredTasks.map((t: { id: number }) => t.id) }
                 },
                 data: {
                     status: "AVAILABLE",

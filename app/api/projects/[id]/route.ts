@@ -1,6 +1,7 @@
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 export async function DELETE(
     request: Request,
@@ -25,13 +26,13 @@ export async function DELETE(
         // we can use a transaction or rely on relation delete actions if configured in schema.
         // Our schema relations don't have explicit onDelete: Cascade, so we should do it manually for safety.
 
-        await prisma.$transaction(async (tx) => {
+        await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             // Find all branches
             const branches = await tx.projectBranch.findMany({
                 where: { projectId },
                 select: { id: true }
             });
-            const branchIds = branches.map(b => b.id);
+            const branchIds = branches.map((b: { id: number }) => b.id);
 
             if (branchIds.length > 0) {
                 // Find all tasks in these branches
@@ -39,7 +40,7 @@ export async function DELETE(
                     where: { branchId: { in: branchIds } },
                     select: { id: true }
                 });
-                const taskIds = tasks.map(t => t.id);
+                const taskIds = tasks.map((t: { id: number }) => t.id);
 
                 if (taskIds.length > 0) {
                     // Delete Submissions

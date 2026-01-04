@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
-
-const inter = Inter({ subsets: ["latin"] });
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "TeamCore Workspace",
@@ -18,19 +16,30 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="tr">
+      <body className="font-sans">
         <AuthProvider>
           <div className="flex">
             <Sidebar />
             <div className="flex-1 ml-64 flex flex-col min-h-screen">
-              {/* Navbar is top navigation for the content area */}
               <Navbar />
               <main className="p-8 flex-1">
                 {children}
               </main>
             </div>
           </div>
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              style: {
+                background: "#1e293b",
+                border: "1px solid #334155",
+                color: "#f8fafc",
+              },
+            }}
+            richColors
+            closeButton
+          />
         </AuthProvider>
       </body>
     </html>

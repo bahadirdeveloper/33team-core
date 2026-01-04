@@ -17,11 +17,15 @@ model User {
   role      String   @default("MEMBER") // ADMIN, MEMBER
   lastSeenAt DateTime?
   mustChangePassword Boolean @default(false)
-  
+  avatarColor String?  // Kullanıcı avatar rengi
+
   tasks     Task[]   // Assignments
   submissions TaskSubmission[]
   branchOwnerships BranchOwnership[]
-  
+  notifications Notification[]
+  comments Comment[]
+  activityLogs ActivityLog[]
+
   createdAt DateTime @default(now())
 }
 
@@ -76,7 +80,8 @@ model Task {
   dependentOn   TaskDependency[] @relation("TaskDependents")
   
   submission    TaskSubmission?
-  
+  comments      Comment[]
+
   createdAt     DateTime @default(now())
 }
 
@@ -119,4 +124,45 @@ model BranchOwnership {
   createdAt DateTime @default(now())
   
   @@unique([userId, branchId])
+}
+
+// ==================== YENİ MODELLER ====================
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  type      String   // TASK_ASSIGNED, TASK_COMPLETED, COMMENT, DEADLINE_SOON, MENTION
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  link      String?
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  taskId    Int
+  userId    Int
+  content   String
+
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model ActivityLog {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  action     String   // TASK_CREATED, TASK_TAKEN, TASK_COMPLETED, PROJECT_CREATED, COMMENT_ADDED
+  entityType String   // TASK, PROJECT, BRANCH, USER
+  entityId   Int
+  metadata   Json?    // Ekstra bilgiler
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now())
 }
